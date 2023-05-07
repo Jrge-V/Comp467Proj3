@@ -381,11 +381,33 @@ if args.process:
             if start_value_3 <= framesPerSec or end_value_3 <= framesPerSec:
                 fps_list.append(frame_range)
 
-    print(fps_list)
+    # sort and fix overlap ranges from db call
+    fps_ranges = []
+    for r in fps_list:
+        if "-" in r:
+            start, end = map(int, r.split("-"))
+            fps_ranges.append((start, end))
+        else:
+            fps_ranges.append((int(r), int(r)))
+    fps_ranges.sort()
+    merged_ranges = []
+    current_start, current_end = fps_ranges[0]
+    for start, end in fps_ranges[1:]:
+        if start <= current_end + 1:
+            current_end = max(current_end, end)
+        else:
+            merged_ranges.append((current_start, current_end))
+            current_start, current_end = start, end
+    merged_ranges.append((current_start, current_end))
 
-    fps_list_ascend = sorted(fps_list)
+    fiexed_fps = []
+    for start, end in merged_ranges:
+        if start == end:
+            fiexed_fps.append(str(start))
+        else:
+            fiexed_fps.append(f"{start}-{end}")
 
-    print(f"\n{fps_list_ascend}")
+    print(fiexed_fps)
 
     #python main.py --files Baselight_THolland_20230327.txt Flame_DFlowers_20230327.txt --xytech Xytech_20230327.txt --output --process .\twitch_nft_demo.mp4
 
