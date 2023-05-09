@@ -3,6 +3,8 @@ import sys
 import re
 import csv
 import subprocess
+# pip install pandas
+import pandas
 
 # pip install python-dotenv
 from dotenv import load_dotenv
@@ -400,14 +402,55 @@ if args.process:
             current_start, current_end = start, end
     merged_ranges.append((current_start, current_end))
 
-    fiexed_fps = []
+    fixed_fps = []
     for start, end in merged_ranges:
         if start == end:
-            fiexed_fps.append(str(start))
+            fixed_fps.append(str(start))
         else:
-            fiexed_fps.append(f"{start}-{end}")
+            fixed_fps.append(f"{start}-{end}")
 
-    print(fiexed_fps)
+    print(fixed_fps)
+
+    range_fps = []
+    for fps in fixed_fps:
+        if "-" in fps:
+            range_fps.append(fps)
+
+    print(f"\n{range_fps}\n")
+
+    range_fps_L = []
+    range_fps_R = []
+    while i < len(range_fps):
+        range_fps[i] = re.split('-', range_fps[i])
+        range_fps_L.append(int(range_fps[i][0]))
+        range_fps_R.append(int(range_fps[i][1]))
+        i += 1
+    else:
+        i = 0
+
+    fps_L = []
+    fps_R = []
+
+    for frames in range_fps_L:
+        fps_L.append(frames/60)
+
+    for frames in range_fps_R:
+        fps_R.append(frames/60)
+
+    timeCode = []
+
+    while i < len(fps_L):
+        timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_L[i]))
+        timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_R[i]))
+        timeCode.append(timeCL + "/" + timeCR)
+        i += 1
+    else:
+        i = 0
+
+    for x in range(len(timeCode)):
+        print(timeCode[x])
+
+
 
     #python main.py --files Baselight_THolland_20230327.txt Flame_DFlowers_20230327.txt --xytech Xytech_20230327.txt --output --process .\twitch_nft_demo.mp4
 
