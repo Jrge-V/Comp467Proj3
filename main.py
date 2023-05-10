@@ -371,28 +371,48 @@ if args.process:
     else:
         i = 0
 
+    # list to get the thumbnail middle ranges
+    thumb_range = []
+    while i < len(range_fps_L):
+        thumb_range.append(math.ceil((range_fps_R[i] - range_fps_L[i]) / 2) + range_fps_L[i])
+        i += 1
+    else:
+        i = 0
+
+
     #get the split ranges and derive the timecode
     fps_L = []
     fps_R = []
+    thumb_range_time = []
     for frames in range_fps_L:
         fps_L.append(frames/60)
 
     for frames in range_fps_R:
         fps_R.append(frames/60)
 
+    for frames in thumb_range:
+        thumb_range_time.append(frames/60)
+
     timeCode = []
+    thumb_timecode = []
     # append the timecode of the timecode
     while i < len(fps_L):
         range_fps_L[i] = range_fps_L[i] - (math.floor(range_fps_L[i] / 60) * 60)
         range_fps_R[i] = range_fps_R[i] - (math.floor(range_fps_R[i] / 60) * 60)
+        thumb_range[i] = thumb_range[i] - (math.floor(thumb_range[i] / 60) * 60)
         timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:{:02d}".format(range_fps_L[i]))
         timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:{:02d}".format(range_fps_R[i]))
+        timeCRange = pandas.to_datetime(thumb_range_time[i], unit='s').strftime("%H:%M:%S.{:02d}".format(thumb_range[i]))
         timeCode.append(timeCL + "/" + timeCR)
+        thumb_timecode.append(timeCRange)
         i += 1
     else:
         i = 0
 
-
+    # create a thumbnail folder
+    thumbnail_folder = "thumbnails"
+    if not os.path.exists(thumbnail_folder):
+        os.makedirs(thumbnail_folder)
 
     # output to csv or DB or xls (output flag)
     if args.output == "csv":
@@ -448,14 +468,19 @@ if args.process:
         worksheet.write(0, 2, "Timecode")
         worksheet.write(0, 3, "Thumbnail")
 
-        for row, (location_xls, range_xls, timecode_xls) in enumerate(zip(location_list, fps_list_ranges_c, timeCode),
-                                                                      start=1):
-            worksheet.write(row, 0, location_xls)
-            worksheet.write(row, 1, range_xls)
-            worksheet.write(row, 2, timecode_xls)
+        for i, timecode in enumerate(thumb_timecode):
+            thumbnail_path = os.path.join(thumbnail_folder, f"thumbnail_{i}.png")
+            thumb = ["ffmpeg", "-ss", timecode, "-i", args.process, "-vframes", "1", "-vf", "scale=48:48", "-f",
+                     "image2", "-y", thumbnail_path]
+            subprocess.run(thumb)
+
+            location_xls = location_list[i]
+            range_xls = fps_list_ranges_c[i]
+            timecode_xls = timeCode[i]
+
+            worksheet.write(i + 1, 0, location_xls)
+            worksheet.write(i + 1, 1, range_xls)
+            worksheet.write(i + 1, 2, timecode_xls)
+            worksheet.insert_image(i + 1, 3, thumbnail_path)
 
         workbook.close()
-
-    #python main.py --files Baselight_THolland_20230327.txt Flame_DFlowers_20230327.txt --xytech Xytech_20230327.txt --output --process .\twitch_nft_demo.mp4
-
-
