@@ -5,6 +5,7 @@ import csv
 import subprocess
 # pip install pandas
 import pandas
+import math
 
 # pip install python-dotenv
 from dotenv import load_dotenv
@@ -399,47 +400,56 @@ if args.process:
     print(f"\n{fps_list_ranges}\n")
     print(len(fps_list_ranges))
 
-    # range_fps = []
-    # for fps in fixed_fps:
-    #     if "-" in fps:
-    #         range_fps.append(fps)
-    #
-    # range_fps_c = range_fps.copy()
-    # print(f"\n{range_fps}\n")
-    #
-    # range_fps_L = []
-    # range_fps_R = []
-    # while i < len(range_fps):
-    #     range_fps[i] = re.split('-', range_fps[i])
-    #     range_fps_L.append(int(range_fps[i][0]))
-    #     range_fps_R.append(int(range_fps[i][1]))
-    #     i += 1
-    # else:
-    #     i = 0
-    #
-    # fps_L = []
-    # fps_R = []
-    #
-    # for frames in range_fps_L:
-    #     fps_L.append(frames/60)
-    #
-    # for frames in range_fps_R:
-    #     fps_R.append(frames/60)
-    #
-    # timeCode = []
-    #
-    # while i < len(fps_L):
-    #     timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_L[i]))
-    #     timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_R[i]))
-    #     timeCode.append(timeCL + "/" + timeCR)
-    #     i += 1
-    # else:
-    #     i = 0
-    #
-    # for x in range(len(timeCode)):
-    #     print(timeCode[x])
-    #
-    # print(f"\n{range_fps_c}\n")
+    # call the locations associated with the ranges from DB
+    location_list = []
+    for document in file_metadata.find({"Frame/Ranges": {"$in": fps_list_ranges}}):
+        f_r = document.get("Frame/Ranges", [])
+        location_3 = document.get("Location", [])
+        for i, frame_range in enumerate(f_r):
+            if frame_range in fps_list_ranges:
+                location_list.append(location_3[i])
+
+    print(f"\n{location_list}\n")
+    print(len(location_list))
+
+    # split ranges to convert them into timecode
+    i = 0
+    range_fps_L = []
+    range_fps_R = []
+    while i < len(fps_list_ranges):
+        fps_list_ranges[i] = re.split('-', fps_list_ranges[i])
+        range_fps_L.append(int(fps_list_ranges[i][0]))
+        range_fps_R.append(int(fps_list_ranges[i][1]))
+        i += 1
+    else:
+        i = 0
+
+    #get the split ranges and derive the timecode
+    fps_L = []
+    fps_R = []
+    for frames in range_fps_L:
+        fps_L.append(frames/60)
+
+    for frames in range_fps_R:
+        fps_R.append(frames/60)
+
+    timeCode = []
+    # append the timecode of the timecode
+    while i < len(fps_L):
+        range_fps_L[i] = range_fps_L[i] - (math.floor(range_fps_L[i] / 60) * 60)
+        range_fps_R[i] = range_fps_R[i] - (math.floor(range_fps_R[i] / 60) * 60)
+        timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:{:02d}".format(range_fps_L[i]))
+        timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:{:02d}".format(range_fps_R[i]))
+        timeCode.append(timeCL + "/" + timeCR)
+        i += 1
+    else:
+        i = 0
+
+    for x in range(len(timeCode)):
+        print(timeCode[x])
+
+    print(len(timeCode))
+
 
 
 
