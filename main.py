@@ -7,6 +7,9 @@ import subprocess
 import pandas
 import math
 
+# pip install xlsxwriter
+import xlsxwriter
+
 # pip install python-dotenv
 from dotenv import load_dotenv
 import os
@@ -22,7 +25,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--files", dest="workFiles", nargs="+", help="Baselight/Flame files to process")
 parser.add_argument("--xytech", dest="workOrder", help="Xytech file to process")
 parser.add_argument("--verbose", action="store_true", help="flag to show db call console output")
-parser.add_argument("--output", dest="output", action="store_true", help="flag for CSV(true) or DB(false) output")
+parser.add_argument("--output", dest="output", choices=["csv", "db", "xls"], default="csv", help="output format: csv, db or xls")
 parser.add_argument("--process", help="pipe video file")
 args = parser.parse_args()
 
@@ -251,49 +254,6 @@ mydb = client["Proj3DB"]
 file_submission = mydb["fileSub"]
 file_metadata = mydb["fileMD"]
 
-# output to csv or DB (output flag)
-if args.output:
-    print("CSV File output\n")
-
-    # export to csv
-    with open("proj3.csv", "w", newline="") as csvfile:
-        fieldnames = ["Producer", "Operator", "Job", "Notes"]
-        thewriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        thewriter.writeheader()
-        thewriter.writerow({"Producer": xytech_file_info[0],
-                            "Operator": xytech_file_info[1],
-                            "Job": xytech_file_info[2],
-                            "Notes": xytech_file_info[3]})
-
-        blankname = ["Blank"]
-        newWrite = csv.DictWriter(csvfile, fieldnames=blankname)
-        newWrite.writerow({"Blank": " "})
-
-        splitname = ["Left", "Right"]
-        lastWrite = csv.DictWriter(csvfile, fieldnames=splitname)
-
-        k = 0
-        for combined in combined_location:
-            lastWrite.writerow({"Left": combined_location[k], "Right": combined_ranges[k]})
-            k += 1
-
-else:
-    print("BD output")
-
-    # insert into collections
-
-    insert_sub = {"User that ran script": user, "Machine": machine, "Name of User on file": file_user,
-                  "Date of file": file_date, "Submitted date": curr_date}
-    insert_in_sub = file_submission.insert_one(insert_sub)
-    print("Data has been inserted into collection 1\n",
-          file_submission.find_one({"_id": insert_in_sub.inserted_id}), "\n")
-
-    insert_meta = {"Name of user on file": file_user, "Date of file": file_date,
-                   "Location": combined_location, "Frame/Ranges": combined_ranges}
-    insert_in_meta = file_metadata.insert_one(insert_meta)
-    print("Data has been inserted into collection 2\n",
-          file_metadata.find_one({"_id": insert_in_meta.inserted_id}))
-
 # print database calls to console
 if args.verbose:
 
@@ -368,8 +328,6 @@ if args.process:
     # convert length to 60 fps, this gives me an FPS of 5977
     framesPerSec = int(video_length * 60)
 
-    print(f"video length is {video_length} seconds. FPS: {framesPerSec}")
-
     # access DB from proj 2 and store ranges that fall under 5977
     fps_list = []
     for document in file_metadata.find({}, {"Frame/Ranges": 1}):
@@ -384,21 +342,13 @@ if args.process:
             if start_value_3 <= framesPerSec or end_value_3 <= framesPerSec:
                 fps_list.append(frame_range)
 
-
-    print(f"\n{fps_list}\n")
-
-    print(len(fps_list))
-
-
-
     # remove any single frames and keep ranges
     fps_list_ranges = []
     for fps in fps_list:
         if "-" in fps:
             fps_list_ranges.append(fps)
 
-    print(f"\n{fps_list_ranges}\n")
-    print(len(fps_list_ranges))
+    fps_list_ranges_c = fps_list_ranges.copy()
 
     # call the locations associated with the ranges from DB
     location_list = []
@@ -408,9 +358,6 @@ if args.process:
         for i, frame_range in enumerate(f_r):
             if frame_range in fps_list_ranges:
                 location_list.append(location_3[i])
-
-    print(f"\n{location_list}\n")
-    print(len(location_list))
 
     # split ranges to convert them into timecode
     i = 0
@@ -445,14 +392,69 @@ if args.process:
     else:
         i = 0
 
-    for x in range(len(timeCode)):
-        print(timeCode[x])
-
-    print(len(timeCode))
 
 
+    # output to csv or DB or xls (output flag)
+    if args.output == "csv":
+        print("CSV File output\n")
 
+        # export to csv
+        with open("proj3.csv", "w", newline="") as csvfile:
+            fieldnames = ["Producer", "Operator", "Job", "Notes"]
+            thewriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            thewriter.writeheader()
+            thewriter.writerow({"Producer": xytech_file_info[0],
+                                "Operator": xytech_file_info[1],
+                                "Job": xytech_file_info[2],
+                                "Notes": xytech_file_info[3]})
 
+            blankname = ["Blank"]
+            newWrite = csv.DictWriter(csvfile, fieldnames=blankname)
+            newWrite.writerow({"Blank": " "})
+
+            splitname = ["Left", "Right"]
+            lastWrite = csv.DictWriter(csvfile, fieldnames=splitname)
+
+            k = 0
+            for combined in combined_location:
+                lastWrite.writerow({"Left": combined_location[k], "Right": combined_ranges[k]})
+                k += 1
+
+    elif args.output == "db":
+        print("BD output")
+
+        # insert into collections
+
+        insert_sub = {"User that ran script": user, "Machine": machine, "Name of User on file": file_user,
+                      "Date of file": file_date, "Submitted date": curr_date}
+        insert_in_sub = file_submission.insert_one(insert_sub)
+        print("Data has been inserted into collection 1\n",
+              file_submission.find_one({"_id": insert_in_sub.inserted_id}), "\n")
+
+        insert_meta = {"Name of user on file": file_user, "Date of file": file_date,
+                       "Location": combined_location, "Frame/Ranges": combined_ranges}
+        insert_in_meta = file_metadata.insert_one(insert_meta)
+        print("Data has been inserted into collection 2\n",
+              file_metadata.find_one({"_id": insert_in_meta.inserted_id}))
+
+    elif args.output == "xls":
+        print("XLS output")
+
+        workbook = xlsxwriter.Workbook("proj3.xlsx")
+        worksheet = workbook.add_worksheet()
+
+        worksheet.write(0, 0, "Location")
+        worksheet.write(0, 1, "Ranges")
+        worksheet.write(0, 2, "Timecode")
+        worksheet.write(0, 3, "Thumbnail")
+
+        for row, (location_xls, range_xls, timecode_xls) in enumerate(zip(location_list, fps_list_ranges_c, timeCode),
+                                                                      start=1):
+            worksheet.write(row, 0, location_xls)
+            worksheet.write(row, 1, range_xls)
+            worksheet.write(row, 2, timecode_xls)
+
+        workbook.close()
 
     #python main.py --files Baselight_THolland_20230327.txt Flame_DFlowers_20230327.txt --xytech Xytech_20230327.txt --output --process .\twitch_nft_demo.mp4
 
