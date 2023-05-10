@@ -364,13 +364,13 @@ if args.process:
                                                     "format=duration", "-of",
                                                   "default=noprint_wrappers=1:nokey=1", args.process]))
 
-    # convert length to 60 fps
+    # convert length to 60 fps, this gives me an FPS of 5977
     framesPerSec = int(video_length * 60)
 
     print(f"video length is {video_length} seconds. FPS: {framesPerSec}")
 
+    # access DB from proj 2 and store ranges that fall under 5977
     fps_list = []
-
     for document in file_metadata.find({}, {"Frame/Ranges": 1}):
         frames_ranges_3 = document.get("Frame/Ranges", [])
 
@@ -383,72 +383,64 @@ if args.process:
             if start_value_3 <= framesPerSec or end_value_3 <= framesPerSec:
                 fps_list.append(frame_range)
 
-    # sort and fix overlap ranges from db call
-    fps_ranges = []
-    for r in fps_list:
-        if "-" in r:
-            start, end = map(int, r.split("-"))
-            fps_ranges.append((start, end))
-        else:
-            fps_ranges.append((int(r), int(r)))
-    fps_ranges.sort()
-    merged_ranges = []
-    current_start, current_end = fps_ranges[0]
-    for start, end in fps_ranges[1:]:
-        if start <= current_end + 1:
-            current_end = max(current_end, end)
-        else:
-            merged_ranges.append((current_start, current_end))
-            current_start, current_end = start, end
-    merged_ranges.append((current_start, current_end))
 
-    fixed_fps = []
-    for start, end in merged_ranges:
-        if start == end:
-            fixed_fps.append(str(start))
-        else:
-            fixed_fps.append(f"{start}-{end}")
+    print(f"\n{fps_list}\n")
 
-    print(fixed_fps)
+    print(len(fps_list))
 
-    range_fps = []
-    for fps in fixed_fps:
+
+
+    # remove any single frames and keep ranges
+    fps_list_ranges = []
+    for fps in fps_list:
         if "-" in fps:
-            range_fps.append(fps)
+            fps_list_ranges.append(fps)
 
-    print(f"\n{range_fps}\n")
+    print(f"\n{fps_list_ranges}\n")
+    print(len(fps_list_ranges))
 
-    range_fps_L = []
-    range_fps_R = []
-    while i < len(range_fps):
-        range_fps[i] = re.split('-', range_fps[i])
-        range_fps_L.append(int(range_fps[i][0]))
-        range_fps_R.append(int(range_fps[i][1]))
-        i += 1
-    else:
-        i = 0
+    # range_fps = []
+    # for fps in fixed_fps:
+    #     if "-" in fps:
+    #         range_fps.append(fps)
+    #
+    # range_fps_c = range_fps.copy()
+    # print(f"\n{range_fps}\n")
+    #
+    # range_fps_L = []
+    # range_fps_R = []
+    # while i < len(range_fps):
+    #     range_fps[i] = re.split('-', range_fps[i])
+    #     range_fps_L.append(int(range_fps[i][0]))
+    #     range_fps_R.append(int(range_fps[i][1]))
+    #     i += 1
+    # else:
+    #     i = 0
+    #
+    # fps_L = []
+    # fps_R = []
+    #
+    # for frames in range_fps_L:
+    #     fps_L.append(frames/60)
+    #
+    # for frames in range_fps_R:
+    #     fps_R.append(frames/60)
+    #
+    # timeCode = []
+    #
+    # while i < len(fps_L):
+    #     timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_L[i]))
+    #     timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_R[i]))
+    #     timeCode.append(timeCL + "/" + timeCR)
+    #     i += 1
+    # else:
+    #     i = 0
+    #
+    # for x in range(len(timeCode)):
+    #     print(timeCode[x])
+    #
+    # print(f"\n{range_fps_c}\n")
 
-    fps_L = []
-    fps_R = []
-
-    for frames in range_fps_L:
-        fps_L.append(frames/60)
-
-    for frames in range_fps_R:
-        fps_R.append(frames/60)
-
-    timeCode = []
-
-    while i < len(fps_L):
-        timeCL = pandas.to_datetime(fps_L[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_L[i]))
-        timeCR = pandas.to_datetime(fps_R[i], unit='s').strftime("%H:%M:%S:" + str(range_fps_R[i]))
-        timeCode.append(timeCL + "/" + timeCR)
-        i += 1
-    else:
-        i = 0
-
-    for x in range(len(timeCode)):
-        print(timeCode[x])
 
 
 
