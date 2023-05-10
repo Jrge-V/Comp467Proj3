@@ -9,6 +9,6 @@
 <br><br>~~
 ~~4. Using ffmpeg or 3rd party tool of your choice, to extract timecode from video and write your own timecode method to convert marks to timecode
 <br><br>~~
-5. New argparse --output parameter for XLS with flag from (2) should export same CSV export, but in XLS with new column from files found from (3) and export their timecode ranges as well
-<br><br>
+~~5. New argparse --output parameter for XLS with flag from (2) should export same CSV export, but in XLS with new column from files found from (3) and export their timecode ranges as well
+<br><br>~~
 6. Create Thumbnail (96x74) from each entry in (2), but middle most frame or closest to. Add to XLS file to it's corresponding range in new column
