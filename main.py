@@ -470,7 +470,7 @@ if args.process:
 
         for i, timecode in enumerate(thumb_timecode):
             thumbnail_path = os.path.join(thumbnail_folder, f"thumbnail_{i}.png")
-            thumb = ["ffmpeg", "-ss", timecode, "-i", args.process, "-vframes", "1", "-vf", "scale=48:48", "-f",
+            thumb = ["ffmpeg", "-ss", timecode, "-i", args.process, "-vframes", "1", "-vf", "scale=96:74", "-f",
                      "image2", "-y", thumbnail_path]
             subprocess.run(thumb)
 
