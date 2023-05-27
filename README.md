@@ -1,17 +1,11 @@
-# Project 3: The Crucible
-### Solve:
+# Project : Marks Automation Script
 
-~~1. Download my amazing VP video: https://mycsun.box.com/s/v55rwqlu5ufuc8l510r8nni0dzq5qki7
-<br><br>~~
-~~2. Run script with new argparse command `--process <video file>`
-<br><br>~~
-~~3. From (2) Call the populated database from proj2, find all ranges only that fall in the length of video from (1)
-<br><br>~~
-~~4. Using ffmpeg or 3rd party tool of your choice, to extract timecode from video and write your own timecode method to convert marks to timecode
-<br><br>~~
-~~5. New argparse --output parameter for XLS with flag from (2) should export same CSV export, but in XLS with new column from files found from (3) and export their timecode ranges as well
-<br><br>~~
-~~6. Create Thumbnail (96x74) from each entry in (2), but middle most frame or closest to. Add to XLS file to it's corresponding range in new column~~
 
+- An automation script using Python, that automates 4 manual positions in the matter of seconds
+- Python code reads proprietary data from Baselight and Flame machines to calculate filesystem locations of frames
+- All requests saved to MongoDB and can used for data analysis and worker effeciency
+- Exports are basic CSV files to XLS files with timecode and thumbnail preview that can uploaded to Frame.IO and/or Shotgrid
+
+### Example run
 `python main.py --files Baselight_THolland_20230327.txt Flame_DFlowers_20230327.txt --xytech Xytech_20230327.txt --output xls  --process .\twitch_nft_demo.mp4
 `
